@@ -93,6 +93,7 @@ type CaCertsInfo struct {
 // estHTTPClient is the default implementation of the EstClient interface.
 type estHTTPClient struct {
 	builder apiBuilder
+	label   string
 }
 
 // ClientOptions contains configuration settings for building the EST apiclient.
@@ -105,6 +106,12 @@ type ClientOptions struct {
 	// TLSTrustAnchor, if non-nil, designates an explicit trust anchor to use for the
 	// TLS session to the EST server.
 	TLSTrustAnchor *x509.Certificate
+
+	// 3.2.2.  HTTP URIs for Control
+	// https://www.example.com/.well-known/est/cacerts
+	// https://www.example.com/.well-known/est/arbitraryLabel1/cacerts
+	// https://www.example.com/.well-known/est/arbitraryLabel2/cacerts
+	Label string
 }
 
 // NewEstClient creates a apiclient that communicates with the given host.
@@ -120,13 +127,13 @@ func NewEstClientWithOptions(host string, options ClientOptions) EstClient {
 		host:    host,
 	}
 
-	return newEstClient(swaggerBuilder)
+	return newEstClient(swaggerBuilder, options.Label)
 }
 
 // newEstClient constructs an EST client using the specified server API builder. This should be used
 // by unit tests wishing to mock the server interface.
-func newEstClient(builder apiBuilder) EstClient {
-	return estHTTPClient{builder: builder}
+func newEstClient(builder apiBuilder, label string) EstClient {
+	return estHTTPClient{builder: builder, label: label}
 }
 
 // CaCerts implements EstClient.CaCerts
@@ -136,7 +143,8 @@ func (c estHTTPClient) CaCerts() (*CaCertsInfo, error) {
 		return nil, err
 	}
 
-	res, err := est.CACerts()
+	res, err := est.CACerts(c.label)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request CA certificates")
 	}
@@ -156,7 +164,7 @@ func (c estHTTPClient) SimpleEnroll(authData AuthData, req *x509.CertificateRequ
 	}
 
 	data := toBase64(req.Raw)
-	res, err := est.SimpleEnroll(authData, data)
+	res, err := est.SimpleEnroll(c.label, authData, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request certificate")
 	}
@@ -176,7 +184,7 @@ func (c estHTTPClient) SimpleReenroll(authData AuthData, req *x509.CertificateRe
 	}
 
 	data := toBase64(req.Raw)
-	res, err := est.SimpleReEnroll(authData, data)
+	res, err := est.SimpleReEnroll(c.label, authData, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request certificate")
 	}

@@ -27,24 +27,24 @@ import (
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
+	"github.com/lgtti/estclient/apiclient"
+	"github.com/lgtti/estclient/apiclient/operation"
 	"github.com/pkg/errors"
-	"github.com/thales-e-security/estclient/apiclient"
-	"github.com/thales-e-security/estclient/apiclient/operation"
 )
 
 // A serverAPI instance represents and EST server.
 type serverAPI interface {
 
 	// CACerts retrieves the CA certificates from the EST server. The result is the raw response from the server.
-	CACerts() (string, error)
+	CACerts(label string) (string, error)
 
 	// SimpleEnroll triggers the simple enroll endpoint of the EST server. certRequest should be a base64-encoded
 	// DER-format PKCS#10 certificate request. The result is the raw response from the server.
-	SimpleEnroll(authData AuthData, certRequest string) (string, error)
+	SimpleEnroll(label string, authData AuthData, certRequest string) (string, error)
 
 	// SimpleReEnroll triggers the simple re-enroll endpoint of the EST server. certRequest should be a base64-encoded
 	// DER-format PKCS#10 certificate request. The result is the raw response from the server.
-	SimpleReEnroll(authData AuthData, certRequest string) (string, error)
+	SimpleReEnroll(label string, authData AuthData, certRequest string) (string, error)
 }
 
 // An apiBuilder creates serverAPI instances.
@@ -88,21 +88,31 @@ func (s swaggerAPIBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509
 }
 
 type swaggerServerAPI struct {
-	client *operation.Client
+	client operation.ClientService
 }
 
-func (s swaggerServerAPI) CACerts() (string, error) {
-	params := operation.NewCacertsParams()
-	res, err := s.client.Cacerts(params)
+func (s swaggerServerAPI) CACerts(label string) (string, error) {
+	if label != "" {
+		params := operation.NewCacertsLabelledParams()
+		params.Label = label
+		res, err := s.client.CacertsLabelled(params)
+		if err != nil {
+			return "", err
+		}
 
-	if err != nil {
-		return "", err
+		return res.Payload, nil
+	} else {
+		params := operation.NewCacertsParams()
+		res, err := s.client.Cacerts(params)
+		if err != nil {
+			return "", err
+		}
+
+		return res.Payload, nil
 	}
-
-	return res.Payload, nil
 }
 
-func (s swaggerServerAPI) SimpleEnroll(authData AuthData, certRequest string) (string, error) {
+func (s swaggerServerAPI) SimpleEnroll(label string, authData AuthData, certRequest string) (string, error) {
 	var httpAuth runtime.ClientAuthInfoWriter
 	if authData.ID != nil && authData.Secret != nil {
 		httpAuth = httptransport.BasicAuth(*authData.ID, *authData.Secret)
@@ -119,7 +129,7 @@ func (s swaggerServerAPI) SimpleEnroll(authData AuthData, certRequest string) (s
 	return res.Payload, nil
 }
 
-func (s swaggerServerAPI) SimpleReEnroll(authData AuthData, certRequest string) (string, error) {
+func (s swaggerServerAPI) SimpleReEnroll(label string, authData AuthData, certRequest string) (string, error) {
 	var httpAuth runtime.ClientAuthInfoWriter
 	if authData.ID != nil && authData.Secret != nil {
 		httpAuth = httptransport.BasicAuth(*authData.ID, *authData.Secret)

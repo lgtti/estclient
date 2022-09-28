@@ -38,7 +38,10 @@ var (
 // main contains examples used in documentation
 func main() {
 
-	client := estclient.NewEstClient("testrfc7030.com:8443")
+	client := estclient.NewEstClientWithOptions("mtlsapitest.infocert.digital",
+		estclient.ClientOptions{
+			Label: "SW5mb0NlcnQtSVQ=",
+		})
 
 	cacerts, err := client.CaCerts()
 	panicOnError(err)

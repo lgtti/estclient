@@ -29,9 +29,15 @@ type Client struct {
 type ClientService interface {
 	Cacerts(params *CacertsParams) (*CacertsOK, error)
 
+	CacertsLabelled(params *CacertsLabelledParams) (*CacertsLabelledOK, error)
+
 	Simpleenroll(params *SimpleenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimpleenrollOK, error)
 
+	SimpleenrollLabelled(params *SimpleenrollLabelledParams, authInfo runtime.ClientAuthInfoWriter) (*SimpleenrollLabelledOK, error)
+
 	Simplereenroll(params *SimplereenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimplereenrollOK, error)
+
+	SimplereenrollLabelled(params *SimplereenrollLabelledParams, authInfo runtime.ClientAuthInfoWriter) (*SimplereenrollLabelledOK, error)
 
 	SetTransport(transport runtime.ClientTransport)
 }
@@ -71,6 +77,40 @@ func (a *Client) Cacerts(params *CacertsParams) (*CacertsOK, error) {
 }
 
 /*
+  CacertsLabelled distributions of c a certificates
+*/
+func (a *Client) CacertsLabelled(params *CacertsLabelledParams) (*CacertsLabelledOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewCacertsLabelledParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "cacerts-labelled",
+		Method:             "GET",
+		PathPattern:        "/{label}/cacerts",
+		ProducesMediaTypes: []string{"application/pkcs7-mime"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"https"},
+		Params:             params,
+		Reader:             &CacertsLabelledReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*CacertsLabelledOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for cacerts-labelled: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
   Simpleenroll enrollments of clients
 */
 func (a *Client) Simpleenroll(params *SimpleenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimpleenrollOK, error) {
@@ -106,6 +146,41 @@ func (a *Client) Simpleenroll(params *SimpleenrollParams, authInfo runtime.Clien
 }
 
 /*
+  SimpleenrollLabelled enrollments of clients
+*/
+func (a *Client) SimpleenrollLabelled(params *SimpleenrollLabelledParams, authInfo runtime.ClientAuthInfoWriter) (*SimpleenrollLabelledOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewSimpleenrollLabelledParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "simpleenroll-labelled",
+		Method:             "POST",
+		PathPattern:        "/{label}/simpleenroll",
+		ProducesMediaTypes: []string{"application/pkcs7-mime"},
+		ConsumesMediaTypes: []string{"application/pkcs10"},
+		Schemes:            []string{"https"},
+		Params:             params,
+		Reader:             &SimpleenrollLabelledReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*SimpleenrollLabelledOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for simpleenroll-labelled: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
   Simplereenroll enrollments of clients requires mutual tls
 */
 func (a *Client) Simplereenroll(params *SimplereenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimplereenrollOK, error) {
@@ -137,6 +212,41 @@ func (a *Client) Simplereenroll(params *SimplereenrollParams, authInfo runtime.C
 	// unexpected success response
 	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for simplereenroll: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+  SimplereenrollLabelled enrollments of clients requires mutual tls
+*/
+func (a *Client) SimplereenrollLabelled(params *SimplereenrollLabelledParams, authInfo runtime.ClientAuthInfoWriter) (*SimplereenrollLabelledOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewSimplereenrollLabelledParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "simplereenroll-labelled",
+		Method:             "POST",
+		PathPattern:        "/{label}/simplereenroll",
+		ProducesMediaTypes: []string{"application/pkcs7-mime"},
+		ConsumesMediaTypes: []string{"application/pkcs10"},
+		Schemes:            []string{"https"},
+		Params:             params,
+		Reader:             &SimplereenrollLabelledReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*SimplereenrollLabelledOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for simplereenroll-labelled: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 
