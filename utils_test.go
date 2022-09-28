@@ -35,9 +35,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fullsailor/pkcs7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mozilla.org/pkcs7"
 )
 
 func TestIsSelfSigned(t *testing.T) {

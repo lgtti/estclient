@@ -27,7 +27,7 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 
-	"github.com/thales-e-security/estclient"
+	"github.com/lgtti/estclient"
 )
 
 var (

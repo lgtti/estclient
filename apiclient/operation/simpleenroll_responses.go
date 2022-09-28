@@ -10,8 +10,7 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
-
-	strfmt "github.com/go-openapi/strfmt"
+	"github.com/go-openapi/strfmt"
 )
 
 // SimpleenrollReader is a Reader for the Simpleenroll structure.
@@ -22,56 +21,58 @@ type SimpleenrollReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *SimpleenrollReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewSimpleenrollOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 400:
 		result := NewSimpleenrollBadRequest()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	case 401:
 		result := NewSimpleenrollUnauthorized()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	case 500:
 		result := NewSimpleenrollInternalServerError()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	default:
-		return nil, runtime.NewAPIError("unknown error", response, response.Code())
+		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
 	}
 }
 
 // NewSimpleenrollOK creates a SimpleenrollOK with default headers values
 func NewSimpleenrollOK() *SimpleenrollOK {
+	var (
+		// initialize headers with default values
+		contentTransferEncodingDefault = string("base64")
+
+		contentTypeDefault = string("application/pkcs7-mime")
+	)
+
 	return &SimpleenrollOK{
-		ContentTransferEncoding: "base64",
-		ContentType:             "application/pkcs7-mime",
+
+		ContentTransferEncoding: contentTransferEncodingDefault,
+		ContentType:             contentTypeDefault,
 	}
 }
 
-/*SimpleenrollOK handles this case with default header values.
+/* SimpleenrollOK describes a response with status code 200, with default header values.
 
 successful operation
 */
 type SimpleenrollOK struct {
 	ContentTransferEncoding string
-
-	ContentType string
+	ContentType             string
 
 	Payload string
 }
@@ -79,14 +80,25 @@ type SimpleenrollOK struct {
 func (o *SimpleenrollOK) Error() string {
 	return fmt.Sprintf("[POST /simpleenroll][%d] simpleenrollOK  %+v", 200, o.Payload)
 }
+func (o *SimpleenrollOK) GetPayload() string {
+	return o.Payload
+}
 
 func (o *SimpleenrollOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	// response header Content-Transfer-Encoding
-	o.ContentTransferEncoding = response.GetHeader("Content-Transfer-Encoding")
+	// hydrates response header Content-Transfer-Encoding
+	hdrContentTransferEncoding := response.GetHeader("Content-Transfer-Encoding")
 
-	// response header Content-Type
-	o.ContentType = response.GetHeader("Content-Type")
+	if hdrContentTransferEncoding != "" {
+		o.ContentTransferEncoding = hdrContentTransferEncoding
+	}
+
+	// hydrates response header Content-Type
+	hdrContentType := response.GetHeader("Content-Type")
+
+	if hdrContentType != "" {
+		o.ContentType = hdrContentType
+	}
 
 	// response payload
 	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
@@ -101,7 +113,7 @@ func NewSimpleenrollBadRequest() *SimpleenrollBadRequest {
 	return &SimpleenrollBadRequest{}
 }
 
-/*SimpleenrollBadRequest handles this case with default header values.
+/* SimpleenrollBadRequest describes a response with status code 400, with default header values.
 
 invalid request
 */
@@ -111,6 +123,9 @@ type SimpleenrollBadRequest struct {
 
 func (o *SimpleenrollBadRequest) Error() string {
 	return fmt.Sprintf("[POST /simpleenroll][%d] simpleenrollBadRequest  %+v", 400, o.Payload)
+}
+func (o *SimpleenrollBadRequest) GetPayload() string {
+	return o.Payload
 }
 
 func (o *SimpleenrollBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -128,7 +143,7 @@ func NewSimpleenrollUnauthorized() *SimpleenrollUnauthorized {
 	return &SimpleenrollUnauthorized{}
 }
 
-/*SimpleenrollUnauthorized handles this case with default header values.
+/* SimpleenrollUnauthorized describes a response with status code 401, with default header values.
 
 Authentication information is missing or invalid
 */
@@ -142,8 +157,12 @@ func (o *SimpleenrollUnauthorized) Error() string {
 
 func (o *SimpleenrollUnauthorized) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	// response header WWW_Authenticate
-	o.WWWAuthenticate = response.GetHeader("WWW_Authenticate")
+	// hydrates response header WWW_Authenticate
+	hdrWWWAuthenticate := response.GetHeader("WWW_Authenticate")
+
+	if hdrWWWAuthenticate != "" {
+		o.WWWAuthenticate = hdrWWWAuthenticate
+	}
 
 	return nil
 }
@@ -153,7 +172,7 @@ func NewSimpleenrollInternalServerError() *SimpleenrollInternalServerError {
 	return &SimpleenrollInternalServerError{}
 }
 
-/*SimpleenrollInternalServerError handles this case with default header values.
+/* SimpleenrollInternalServerError describes a response with status code 500, with default header values.
 
 something went wrong
 */
@@ -163,6 +182,9 @@ type SimpleenrollInternalServerError struct {
 
 func (o *SimpleenrollInternalServerError) Error() string {
 	return fmt.Sprintf("[POST /simpleenroll][%d] simpleenrollInternalServerError  %+v", 500, o.Payload)
+}
+func (o *SimpleenrollInternalServerError) GetPayload() string {
+	return o.Payload
 }
 
 func (o *SimpleenrollInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -32,8 +32,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/fullsailor/pkcs7"
 	"github.com/pkg/errors"
+	"go.mozilla.org/pkcs7"
 )
 
 // algs contains mappings between signature algorithms and the appropriate

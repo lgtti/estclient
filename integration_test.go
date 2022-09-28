@@ -21,6 +21,8 @@
 package estclient
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,16 +41,22 @@ var (
 func TestCaCertsWithServer(t *testing.T) {
 	skipIfNeeded(t)
 
-	client := NewEstClient(estServer)
+	ca, err := getTestServerCA()
+	assert.NoError(t, err)
 
-	_, err := client.CaCerts()
+	client := NewEstClientWithOptions(estServer, ClientOptions{TLSTrustAnchor: ca})
+
+	_, err = client.CaCerts()
 	assert.NoError(t, err)
 }
 
 func TestSimpleEnrollWithServer(t *testing.T) {
 	skipIfNeeded(t)
 
-	client := NewEstClient(estServer)
+	ca, err := getTestServerCA()
+	assert.NoError(t, err)
+
+	client := NewEstClientWithOptions(estServer, ClientOptions{TLSTrustAnchor: ca})
 
 	_, req, err := makeCertReq(nil)
 	assert.NoError(t, err)
@@ -64,7 +72,10 @@ func TestSimpleEnrollWithServer(t *testing.T) {
 func TestSimpleReenrollWithServer(t *testing.T) {
 	skipIfNeeded(t)
 
-	client := NewEstClient(estServer)
+	ca, err := getTestServerCA()
+	assert.NoError(t, err)
+
+	client := NewEstClientWithOptions(estServer, ClientOptions{TLSTrustAnchor: ca})
 
 	key, req, err := makeCertReq(nil)
 	assert.NoError(t, err)
@@ -77,7 +88,7 @@ func TestSimpleReenrollWithServer(t *testing.T) {
 	cert, err := client.SimpleEnroll(authData, req)
 	assert.NoError(t, err)
 
-	_, req2, err := makeCertReq(key)
+	_, req2, _ := makeCertReq(key)
 	authData.Key = key
 	authData.ClientCert = cert
 
@@ -110,4 +121,20 @@ func skipIfNeeded(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+}
+
+func getTestServerCA() (*x509.Certificate, error) {
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	conn, err := tls.Dial("tcp", estServer, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Close()
+
+	certs := conn.ConnectionState().PeerCertificates
+	return certs[0], nil
 }

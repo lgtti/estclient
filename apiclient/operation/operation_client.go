@@ -6,13 +6,14 @@ package operation
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"github.com/go-openapi/runtime"
+	"fmt"
 
-	strfmt "github.com/go-openapi/strfmt"
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 )
 
 // New creates a new operation API client.
-func New(transport runtime.ClientTransport, formats strfmt.Registry) *Client {
+func New(transport runtime.ClientTransport, formats strfmt.Registry) ClientService {
 	return &Client{transport: transport, formats: formats}
 }
 
@@ -24,8 +25,19 @@ type Client struct {
 	formats   strfmt.Registry
 }
 
+// ClientService is the interface for Client methods
+type ClientService interface {
+	Cacerts(params *CacertsParams) (*CacertsOK, error)
+
+	Simpleenroll(params *SimpleenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimpleenrollOK, error)
+
+	Simplereenroll(params *SimplereenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimplereenrollOK, error)
+
+	SetTransport(transport runtime.ClientTransport)
+}
+
 /*
-Cacerts distributions of c a certificates
+  Cacerts distributions of c a certificates
 */
 func (a *Client) Cacerts(params *CacertsParams) (*CacertsOK, error) {
 	// TODO: Validate the params before sending
@@ -37,8 +49,8 @@ func (a *Client) Cacerts(params *CacertsParams) (*CacertsOK, error) {
 		ID:                 "cacerts",
 		Method:             "GET",
 		PathPattern:        "/cacerts",
-		ProducesMediaTypes: []string{"text/plain"},
-		ConsumesMediaTypes: []string{""},
+		ProducesMediaTypes: []string{"application/pkcs7-mime"},
+		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"https"},
 		Params:             params,
 		Reader:             &CacertsReader{formats: a.formats},
@@ -48,12 +60,18 @@ func (a *Client) Cacerts(params *CacertsParams) (*CacertsOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*CacertsOK), nil
-
+	success, ok := result.(*CacertsOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for cacerts: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-Simpleenroll enrollments of clients
+  Simpleenroll enrollments of clients
 */
 func (a *Client) Simpleenroll(params *SimpleenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimpleenrollOK, error) {
 	// TODO: Validate the params before sending
@@ -65,7 +83,7 @@ func (a *Client) Simpleenroll(params *SimpleenrollParams, authInfo runtime.Clien
 		ID:                 "simpleenroll",
 		Method:             "POST",
 		PathPattern:        "/simpleenroll",
-		ProducesMediaTypes: []string{"text/plain"},
+		ProducesMediaTypes: []string{"application/pkcs7-mime"},
 		ConsumesMediaTypes: []string{"application/pkcs10"},
 		Schemes:            []string{"https"},
 		Params:             params,
@@ -77,12 +95,18 @@ func (a *Client) Simpleenroll(params *SimpleenrollParams, authInfo runtime.Clien
 	if err != nil {
 		return nil, err
 	}
-	return result.(*SimpleenrollOK), nil
-
+	success, ok := result.(*SimpleenrollOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for simpleenroll: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-Simplereenroll enrollments of clients requires mutual tls
+  Simplereenroll enrollments of clients requires mutual tls
 */
 func (a *Client) Simplereenroll(params *SimplereenrollParams, authInfo runtime.ClientAuthInfoWriter) (*SimplereenrollOK, error) {
 	// TODO: Validate the params before sending
@@ -94,7 +118,7 @@ func (a *Client) Simplereenroll(params *SimplereenrollParams, authInfo runtime.C
 		ID:                 "simplereenroll",
 		Method:             "POST",
 		PathPattern:        "/simplereenroll",
-		ProducesMediaTypes: []string{"text/plain"},
+		ProducesMediaTypes: []string{"application/pkcs7-mime"},
 		ConsumesMediaTypes: []string{"application/pkcs10"},
 		Schemes:            []string{"https"},
 		Params:             params,
@@ -106,8 +130,14 @@ func (a *Client) Simplereenroll(params *SimplereenrollParams, authInfo runtime.C
 	if err != nil {
 		return nil, err
 	}
-	return result.(*SimplereenrollOK), nil
-
+	success, ok := result.(*SimplereenrollOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for simplereenroll: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 // SetTransport changes the transport on the client

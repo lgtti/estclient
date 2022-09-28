@@ -8,10 +8,9 @@ package apiclient
 import (
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	"github.com/thales-e-security/estclient/apiclient/operation"
+	"github.com/lgtti/estclient/apiclient/operation"
 )
 
 // Default est HTTP client.
@@ -56,9 +55,7 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Est {
 
 	cli := new(Est)
 	cli.Transport = transport
-
 	cli.Operation = operation.New(transport, formats)
-
 	return cli
 }
 
@@ -103,7 +100,7 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // Est is a client for est
 type Est struct {
-	Operation *operation.Client
+	Operation operation.ClientService
 
 	Transport runtime.ClientTransport
 }
@@ -111,7 +108,5 @@ type Est struct {
 // SetTransport changes the transport on the client and all its subresources
 func (c *Est) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
-
 	c.Operation.SetTransport(transport)
-
 }
