@@ -195,6 +195,8 @@ func parseCaCerts(p7data string) (*CaCertsInfo, error) {
 			}
 
 		}
+	} else {
+		result.EstChainCerts = append(result.EstChainCerts, otherCerts...)
 	}
 
 	return result, nil
