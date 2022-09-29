@@ -34,7 +34,7 @@ import (
 
 func TestCaCerts(t *testing.T) {
 	builder := &stubBuilder{api: &stubAPI{t: t}}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 
 	_, err := client.CaCerts()
 	assert.NoError(t, err)
@@ -46,7 +46,7 @@ func TestCaCerts(t *testing.T) {
 func TestSimpleEnroll(t *testing.T) {
 	api := &stubAPI{t: t}
 	builder := &stubBuilder{api: api}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 
 	_, req, err := makeCertReq(nil)
 	assert.NoError(t, err)
@@ -80,7 +80,7 @@ func TestSimpleEnroll(t *testing.T) {
 func TestSimpleEnrollBadAuth(t *testing.T) {
 	api := &stubAPI{t: t}
 	builder := &stubBuilder{api: api}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 
 	_, req, err := makeCertReq(nil)
 	assert.NoError(t, err)
@@ -116,7 +116,7 @@ func TestSimpleEnrollBadAuth(t *testing.T) {
 func TestSimpleReEnroll(t *testing.T) {
 	api := &stubAPI{t: t}
 	builder := &stubBuilder{api: api}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 
 	_, req, err := makeCertReq(nil)
 	assert.NoError(t, err)
@@ -150,7 +150,7 @@ func TestSimpleReEnroll(t *testing.T) {
 func TestSimpleReEnrollBadAuth(t *testing.T) {
 	api := &stubAPI{t: t}
 	builder := &stubBuilder{api: api}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 
 	_, req, err := makeCertReq(nil)
 	assert.NoError(t, err)
@@ -192,7 +192,7 @@ func (brokenBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509.Certi
 
 func TestBrokenBuilder(t *testing.T) {
 	builder := brokenBuilder{}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 	runErrorTestsOnClient(t, client)
 }
 
@@ -212,21 +212,21 @@ func runErrorTestsOnClient(t *testing.T, client EstClient) {
 
 type brokenAPI struct{}
 
-func (brokenAPI) CACerts() (string, error) {
+func (brokenAPI) CACerts(label string) (string, error) {
 	return "", errors.New("boom")
 }
 
-func (brokenAPI) SimpleEnroll(authData AuthData, certRequest string) (string, error) {
+func (brokenAPI) SimpleEnroll(label string, authData AuthData, certRequest string) (string, error) {
 	return "", errors.New("boom")
 }
 
-func (brokenAPI) SimpleReEnroll(authData AuthData, certRequest string) (string, error) {
+func (brokenAPI) SimpleReEnroll(label string, authData AuthData, certRequest string) (string, error) {
 	return "", errors.New("boom")
 }
 
 func TestBrokenServerAPI(t *testing.T) {
 	builder := &stubBuilder{api: brokenAPI{}}
-	client := newEstClient(builder)
+	client := newEstClient(builder, "")
 	runErrorTestsOnClient(t, client)
 }
 
@@ -308,7 +308,7 @@ type stubAPI struct {
 	lastAuthData AuthData
 }
 
-func (*stubAPI) CACerts() (string, error) {
+func (*stubAPI) CACerts(label string) (string, error) {
 	return "MIIBgQYJKoZIhvcNAQcCoIIBcjCCAW4CAQExADALBgkqhkiG9w0BBwGgggFWMIIB\n" +
 		"UjCB+qADAgECAgkAndg29DdzGY4wCgYIKoZIzj0EAwIwFzEVMBMGA1UEAxMMZXN0\n" +
 		"RXhhbXBsZUNBMB4XDTE4MDEwMjIwMzAzMFoXDTI3MTIzMTIwMzAzMFowFzEVMBMG\n" +
@@ -320,7 +320,7 @@ func (*stubAPI) CACerts() (string, error) {
 		"TGZFMQA=\n", nil
 }
 
-func (s *stubAPI) SimpleEnroll(authData AuthData, certRequest string) (string, error) {
+func (s *stubAPI) SimpleEnroll(label string, authData AuthData, certRequest string) (string, error) {
 	s.lastAuthData = authData
 
 	return "MIICdgYJKoZIhvcNAQcCoIICZzCCAmMCAQExADALBgkqhkiG9w0BBwGgggJLMIIC\n" +
@@ -339,7 +339,7 @@ func (s *stubAPI) SimpleEnroll(authData AuthData, certRequest string) (string, e
 		"UokX7j9+enIxAA==\n", nil
 }
 
-func (s *stubAPI) SimpleReEnroll(authData AuthData, certRequest string) (string, error) {
+func (s *stubAPI) SimpleReEnroll(label string, authData AuthData, certRequest string) (string, error) {
 	s.lastAuthData = authData
 
 	return "MIICdQYJKoZIhvcNAQcCoIICZjCCAmICAQExADALBgkqhkiG9w0BBwGgggJKMIIC\n" +

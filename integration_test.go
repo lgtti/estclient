@@ -21,8 +21,10 @@
 package estclient
 
 import (
-	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
+	"io"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -124,17 +126,18 @@ func skipIfNeeded(t *testing.T) {
 }
 
 func getTestServerCA() (*x509.Certificate, error) {
-	conf := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-
-	conn, err := tls.Dial("tcp", estServer, conf)
+	resp, err := http.Get("http://testrfc7030.com/dstcax3.pem")
 	if err != nil {
 		return nil, err
 	}
 
-	defer conn.Close()
+	defer resp.Body.Close()
 
-	certs := conn.ConnectionState().PeerCertificates
-	return certs[0], nil
+	certBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode([]byte(certBytes))
+	return x509.ParseCertificate(block.Bytes)
 }

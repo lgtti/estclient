@@ -21,6 +21,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
 
 	"github.com/lgtti/estclient"
@@ -34,10 +38,7 @@ var (
 // main contains examples used in documentation
 func main() {
 
-	client := estclient.NewEstClientWithOptions("mtlsapitest.infocert.digital",
-		estclient.ClientOptions{
-			Label: "SW5mb0NlcnQtSVQ=",
-		})
+	client := estclient.NewEstClient("testrfc7030.com:8443")
 
 	cacerts, err := client.CaCerts()
 	panicOnError(err)
@@ -50,31 +51,30 @@ func main() {
 		fmt.Printf("Other chain certs: %s\n", c.Subject)
 	}
 
-	/*
-		// Create key and certificate request
-		key, err := rsa.GenerateKey(rand.Reader, 2048)
-		panicOnError(err)
+	// Create key and certificate request
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	panicOnError(err)
 
-		template := x509.CertificateRequest{Subject: pkix.Name{CommonName: "Test"}}
+	template := x509.CertificateRequest{Subject: pkix.Name{CommonName: "Test"}}
 
-		reqBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
-		panicOnError(err)
+	reqBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
+	panicOnError(err)
 
-		req, err := x509.ParseCertificateRequest(reqBytes)
-		panicOnError(err)
+	req, err := x509.ParseCertificateRequest(reqBytes)
+	panicOnError(err)
 
-		// Enroll with EST CA
-		authData := estclient.AuthData{ID: &id, Secret: &secret}
+	// Enroll with EST CA
+	authData := estclient.AuthData{ID: &id, Secret: &secret}
 
-		cert, err := client.SimpleEnroll(authData, req)
-		panicOnError(err)
-		fmt.Printf("Initial cert (DER): %x\n", cert.Raw)
+	cert, err := client.SimpleEnroll(authData, req)
+	panicOnError(err)
+	fmt.Printf("Initial cert (DER): %x\n", cert.Raw)
 
-		// Re-enroll with EST CA
-		authData = estclient.AuthData{ID: &id, Secret: &secret, Key: key, ClientCert: cert}
-		cert2, err := client.SimpleReenroll(authData, req)
-		panicOnError(err)
-		fmt.Printf("Renewed cert (DER): %x\n", cert2.Raw)*/
+	// Re-enroll with EST CA
+	authData = estclient.AuthData{ID: &id, Secret: &secret, Key: key, ClientCert: cert}
+	cert2, err := client.SimpleReenroll(authData, req)
+	panicOnError(err)
+	fmt.Printf("Renewed cert (DER): %x\n", cert2.Raw)
 }
 
 func panicOnError(err error) {
