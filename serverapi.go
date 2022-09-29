@@ -118,15 +118,29 @@ func (s swaggerServerAPI) SimpleEnroll(label string, authData AuthData, certRequ
 		httpAuth = httptransport.BasicAuth(*authData.ID, *authData.Secret)
 	}
 
-	params := operation.NewSimpleenrollParams()
-	params.Certrequest = certRequest
+	if label != "" {
+		params := operation.NewSimpleenrollLabelledParams()
+		params.Certrequest = certRequest
+		params.Label = label
 
-	res, err := s.client.Simpleenroll(params, httpAuth)
-	if err != nil {
-		return "", err
+		res, err := s.client.SimpleenrollLabelled(params, httpAuth)
+		if err != nil {
+			return "", err
+		}
+
+		return res.Payload, nil
+	} else {
+
+		params := operation.NewSimpleenrollParams()
+		params.Certrequest = certRequest
+
+		res, err := s.client.Simpleenroll(params, httpAuth)
+		if err != nil {
+			return "", err
+		}
+
+		return res.Payload, nil
 	}
-
-	return res.Payload, nil
 }
 
 func (s swaggerServerAPI) SimpleReEnroll(label string, authData AuthData, certRequest string) (string, error) {
@@ -135,13 +149,26 @@ func (s swaggerServerAPI) SimpleReEnroll(label string, authData AuthData, certRe
 		httpAuth = httptransport.BasicAuth(*authData.ID, *authData.Secret)
 	}
 
-	params := operation.NewSimplereenrollParams()
-	params.Certrequest = certRequest
+	if label != "" {
+		params := operation.NewSimplereenrollLabelledParams()
+		params.Certrequest = certRequest
+		params.Label = label
 
-	res, err := s.client.Simplereenroll(params, httpAuth)
-	if err != nil {
-		return "", err
+		res, err := s.client.SimplereenrollLabelled(params, httpAuth)
+		if err != nil {
+			return "", err
+		}
+
+		return res.Payload, nil
+	} else {
+		params := operation.NewSimplereenrollParams()
+		params.Certrequest = certRequest
+
+		res, err := s.client.Simplereenroll(params, httpAuth)
+		if err != nil {
+			return "", err
+		}
+
+		return res.Payload, nil
 	}
-
-	return res.Payload, nil
 }
