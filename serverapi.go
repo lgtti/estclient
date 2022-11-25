@@ -24,6 +24,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"net/http"
+	"strings"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -69,6 +70,9 @@ type customHttpTransport struct {
 func (t *customHttpTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	for k, v := range t.headers {
 		r.Header.Set(k, v)
+		if strings.ToLower(k) == "host" {
+			r.TLS.ServerName = v
+		}
 	}
 
 	return t.std.RoundTrip(r)
