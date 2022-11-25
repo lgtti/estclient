@@ -24,7 +24,6 @@ import (
 	"crypto"
 	"crypto/x509"
 	"net/http"
-	"strings"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -65,14 +64,16 @@ type swaggerAPIBuilder struct {
 type customHttpTransport struct {
 	std     http.RoundTripper
 	headers map[string]string
+	sni     string
 }
 
 func (t *customHttpTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	for k, v := range t.headers {
 		r.Header.Set(k, v)
-		if strings.ToLower(k) == "host" {
-			r.TLS.ServerName = v
-		}
+	}
+
+	if t.sni != "" {
+		r.Header.Set("Host", t.sni)
 	}
 
 	return t.std.RoundTrip(r)
@@ -89,6 +90,10 @@ func (s swaggerAPIBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509
 	o := httptransport.TLSClientOptions{
 		InsecureSkipVerify: s.options.InsecureSkipVerify,
 		LoadedCA:           s.options.TLSTrustAnchor,
+	}
+
+	if s.options.Sni != "" {
+		o.ServerName = s.options.Sni
 	}
 
 	if currentKey != nil && currentCert != nil {

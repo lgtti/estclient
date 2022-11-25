@@ -115,6 +115,9 @@ type ClientOptions struct {
 
 	/* Set of HTTP headers for each request. Useful to override the "Host" header for example */
 	Headers map[string]string
+
+	// Override TLS server name indication and Host header
+	Sni string
 }
 
 // NewEstClient creates a apiclient that communicates with the given host.
