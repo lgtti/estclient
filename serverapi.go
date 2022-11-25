@@ -23,6 +23,7 @@ package estclient
 import (
 	"crypto"
 	"crypto/x509"
+	"net/http"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -60,6 +61,26 @@ type swaggerAPIBuilder struct {
 	host    string
 }
 
+type customHttpTransport struct {
+	std     http.RoundTripper
+	headers map[string]string
+}
+
+func (t *customHttpTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	for k, v := range t.headers {
+		r.Header.Set(k, v)
+	}
+
+	return t.std.RoundTrip(r)
+}
+
+func newCustomHttpTransport(headers map[string]string) *customHttpTransport {
+	return &customHttpTransport{
+		std:     http.DefaultTransport,
+		headers: headers,
+	}
+}
+
 func (s swaggerAPIBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509.Certificate) (serverAPI, error) {
 	o := httptransport.TLSClientOptions{
 		InsecureSkipVerify: s.options.InsecureSkipVerify,
@@ -72,6 +93,10 @@ func (s swaggerAPIBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509
 	}
 
 	tlsClient, err := httptransport.TLSClient(o)
+	if s.options.Headers != nil {
+		tlsClient.Transport = newCustomHttpTransport(s.options.Headers)
+	}
+
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create TLS apiclient")
 	}

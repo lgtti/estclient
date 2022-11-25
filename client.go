@@ -112,6 +112,9 @@ type ClientOptions struct {
 	// https://www.example.com/.well-known/est/arbitraryLabel1/cacerts
 	// https://www.example.com/.well-known/est/arbitraryLabel2/cacerts
 	Label string
+
+	/* Set of HTTP headers for each request. Useful to override the "Host" header for example */
+	Headers map[string]string
 }
 
 // NewEstClient creates a apiclient that communicates with the given host.
