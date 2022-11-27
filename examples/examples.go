@@ -38,7 +38,9 @@ var (
 // main contains examples used in documentation
 func main() {
 
-	client := estclient.NewEstClient("testrfc7030.com:8443")
+	client := estclient.NewEstClientWithOptions("testrfc7030.com:8443", estclient.ClientOptions{
+		InsecureSkipVerify: true,
+	})
 
 	cacerts, err := client.CaCerts()
 	panicOnError(err)
