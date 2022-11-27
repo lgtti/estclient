@@ -23,6 +23,7 @@ package estclient
 import (
 	"crypto"
 	"crypto/x509"
+	"fmt"
 	"net/http"
 
 	"github.com/go-openapi/runtime"
@@ -73,6 +74,8 @@ func (t *customHttpTransport) RoundTrip(r *http.Request) (*http.Response, error)
 	}
 
 	if t.sni != "" {
+		fmt.Printf(">>>>>>< set Host header %s\n", t.sni)
+
 		r.Header.Set("Host", t.sni)
 	}
 
@@ -93,6 +96,7 @@ func (s swaggerAPIBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509
 	}
 
 	if s.options.Sni != "" {
+		fmt.Printf(">>>>>>< set SNI %s\n", t.Sni)
 		o.ServerName = s.options.Sni
 	}
 
