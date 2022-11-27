@@ -96,7 +96,7 @@ func (s swaggerAPIBuilder) Build(currentKey crypto.PrivateKey, currentCert *x509
 	}
 
 	if s.options.Sni != "" {
-		fmt.Printf(">>>>>>< set SNI %s\n", t.Sni)
+		fmt.Printf(">>>>>>< set SNI %s\n", s.options.Sni)
 		o.ServerName = s.options.Sni
 	}
 
