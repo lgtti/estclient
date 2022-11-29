@@ -37,7 +37,7 @@ var (
 
 // main contains examples used in documentation
 func main() {
-
+	//
 	client := estclient.NewEstClientWithOptions("testrfc7030.com:8443", estclient.ClientOptions{
 		InsecureSkipVerify: true,
 	})

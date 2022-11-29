@@ -23,9 +23,11 @@ package estclient
 
 import (
 	"crypto"
+	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/go-resty/resty/v2"
 )
 
 // AuthData provides the authentication data offered by the client to the server. Non-nil values will be used during
@@ -92,8 +94,10 @@ type CaCertsInfo struct {
 
 // estHTTPClient is the default implementation of the EstClient interface.
 type estHTTPClient struct {
-	builder apiBuilder
-	label   string
+	httpClient *resty.Client
+	label      string
+	host       string
+	options    ClientOptions
 }
 
 // ClientOptions contains configuration settings for building the EST apiclient.
@@ -118,6 +122,9 @@ type ClientOptions struct {
 
 	// Override TLS server name indication and Host header
 	Sni string
+
+	// Enable rest http client debug
+	Debug bool
 }
 
 // NewEstClient creates a apiclient that communicates with the given host.
@@ -128,72 +135,148 @@ func NewEstClient(host string) EstClient {
 
 // NewEstClientWithOptions accepts additional options to configure the EST apiclient.
 func NewEstClientWithOptions(host string, options ClientOptions) EstClient {
-	swaggerBuilder := swaggerAPIBuilder{
-		options: options,
-		host:    host,
-	}
-
-	return newEstClient(swaggerBuilder, options.Label)
+	return newEstClient(host, options.Label, options)
 }
 
-// newEstClient constructs an EST client using the specified server API builder. This should be used
+// newEstClient constructs an EST client. This should be used
 // by unit tests wishing to mock the server interface.
-func newEstClient(builder apiBuilder, label string) EstClient {
-	return estHTTPClient{builder: builder, label: label}
+func newEstClient(host string, label string, options ClientOptions) EstClient {
+	rest := resty.New()
+
+	rest.SetDebug(options.Debug)
+
+	tlsCfg := &tls.Config{
+		InsecureSkipVerify: options.InsecureSkipVerify,
+	}
+
+	if options.Sni != "" {
+		tlsCfg.ServerName = options.Sni
+		rest.SetHeader("Host", options.Sni)
+	}
+
+	if options.TLSTrustAnchor != nil {
+		trustPool := x509.NewCertPool()
+		trustPool.AddCert(options.TLSTrustAnchor)
+		tlsCfg.RootCAs = trustPool
+	}
+
+	rest.SetTLSClientConfig(tlsCfg)
+
+	return estHTTPClient{httpClient: rest, host: host, label: label, options: options}
 }
 
 // CaCerts implements EstClient.CaCerts
 func (c estHTTPClient) CaCerts() (*CaCertsInfo, error) {
-	est, err := c.builder.Build(nil, nil)
+	var resp *resty.Response
+	var err error
+
+	if c.label != "" {
+		resp, err = c.httpClient.R().
+			SetHeader("Accept", "application/pkcs7-mime").
+			SetHeader("Content-Type", "application/json").
+			Get("https://" + c.host + "/.well-known/est/" + c.label + "/cacerts")
+	} else {
+		resp, err = c.httpClient.R().
+			SetHeader("Accept", "application/pkcs7-mime").
+			SetHeader("Content-Type", "application/json").
+			Get("https://" + c.host + "/.well-known/est/cacerts")
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := est.CACerts(c.label)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request CA certificates")
+	if resp.StatusCode() < 200 || resp.StatusCode() > 299 {
+		return nil, fmt.Errorf("Http wrong response status %d", resp.StatusCode())
 	}
 
-	return parseCaCerts(res)
+	return parseCaCerts(string(resp.Body()))
 }
 
 // SimpleEnroll implements EstClient.SimpleEnroll
 func (c estHTTPClient) SimpleEnroll(authData AuthData, req *x509.CertificateRequest) (*x509.Certificate, error) {
+	var resp *resty.Response
+	var err error
+
 	if err := validateAuthData(authData); err != nil {
 		return nil, err
 	}
 
-	est, err := c.builder.Build(authData.Key, authData.ClientCert)
+	if authData.ClientCert != nil && authData.Key != nil {
+		c.httpClient.SetCertificates(tls.Certificate{
+			PrivateKey:  authData.Key,
+			Certificate: [][]byte{authData.ClientCert.Raw},
+			Leaf:        authData.ClientCert,
+		})
+	}
+
+	httpReq := c.httpClient.R()
+	httpReq = httpReq.
+		SetHeader("Accept", "application/pkcs7-mime").
+		SetHeader("Content-Type", "application/pkcs10").
+		SetBody(toBase64(req.Raw))
+
+	if authData.ID != nil && authData.Secret != nil {
+		httpReq = httpReq.SetBasicAuth(*authData.ID, *authData.Secret)
+	}
+
+	if c.label != "" {
+		resp, err = httpReq.Post("https://" + c.host + "/.well-known/est/" + c.label + "/simpleenroll")
+	} else {
+		resp, err = httpReq.Post("https://" + c.host + "/.well-known/est/simpleenroll")
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	data := toBase64(req.Raw)
-	res, err := est.SimpleEnroll(c.label, authData, data)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request certificate")
+	if resp.StatusCode() < 200 && resp.StatusCode() > 299 {
+		return nil, fmt.Errorf("Http wrong response status %d", resp.StatusCode())
 	}
 
-	return readCertificate(res)
+	return readCertificate(string(resp.Body()))
 }
 
 // SimpleReenroll implements EstClient.SimpleReenroll
 func (c estHTTPClient) SimpleReenroll(authData AuthData, req *x509.CertificateRequest) (*x509.Certificate, error) {
+	var resp *resty.Response
+	var err error
+
 	if err := validateAuthData(authData); err != nil {
 		return nil, err
 	}
 
-	est, err := c.builder.Build(authData.Key, authData.ClientCert)
+	if authData.ClientCert != nil && authData.Key != nil {
+		c.httpClient.SetCertificates(tls.Certificate{
+			PrivateKey:  authData.Key,
+			Certificate: [][]byte{authData.ClientCert.Raw},
+			Leaf:        authData.ClientCert,
+		})
+	}
+
+	httpReq := c.httpClient.R()
+	httpReq = httpReq.
+		SetHeader("Accept", "application/pkcs7-mime").
+		SetHeader("Content-Type", "application/pkcs10").
+		SetBody(toBase64(req.Raw))
+
+	if authData.ID != nil && authData.Secret != nil {
+		httpReq = httpReq.SetBasicAuth(*authData.ID, *authData.Secret)
+	}
+
+	if c.label != "" {
+		resp, err = httpReq.Post("https://" + c.host + "/.well-known/est/" + c.label + "/simplereenroll")
+	} else {
+		resp, err = httpReq.Post("https://" + c.host + "/.well-known/est/simplereenroll")
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	data := toBase64(req.Raw)
-	res, err := est.SimpleReEnroll(c.label, authData, data)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to request certificate")
+	if resp.StatusCode() < 200 && resp.StatusCode() > 299 {
+		return nil, fmt.Errorf("Http wrong response status %d", resp.StatusCode())
 	}
 
-	return readCertificate(res)
+	return readCertificate(string(resp.Body()))
 }
